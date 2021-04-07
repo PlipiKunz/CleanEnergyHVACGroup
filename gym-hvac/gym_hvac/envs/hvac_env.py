@@ -125,6 +125,7 @@ class HVACEnv(gym.Env):
         0	Turn the cooler on
         1   Turn everything off
         2	Turn the heater on
+        3   Fan of outside air into main room
 
     Reward:
         Reward is 1 for every step taken, including the termination step
@@ -152,22 +153,52 @@ class HVACEnv(gym.Env):
     Boundary = namedtuple('Boundary', ['k', 't', 'w'])
 
     class Room(object):
-        def __init__(self, boundary_list=None, hvac=None):
+        def __init__(self, boundary_list=None, hvac=None,fans=[], name=None, volume=None):
+            self.name = name
             self.boundary_list = boundary_list
+            self.volume = volume
             self.hvac = hvac
+            self.fans= fans
 
         def get_temp_change_eq(self):
             def temp_change_eq(time, tau, current_temp, action):
                 return sum([tau.seconds * boundary.k * boundary.w * (boundary.t(time) - current_temp)
                             for boundary in self.boundary_list]) \
-                       + (self.hvac(action) if self.hvac is not None else 0)
+                       + (self.hvac(action) if self.hvac is not None else 0) \
+                       + sum([fan.tempChange(self.name, action, time,tau) for fan in self.fans])
             return temp_change_eq
 
-    # TODO FIND AN ACCEPTABLE VALUE FOR THIS CONSTANT
+    class Fan(object):
+        def __init__(self, roomAName, roomATempGetter, roomBName, roomBTempGetter, actionNum, aVol, bVol):
+            self.a = roomAName
+            self.aTempGet = roomATempGetter
+            self.aVol = aVol
+
+            self.b = roomBName
+            self.bTempGet = roomBTempGetter
+            self.bVol = bVol
+
+            self.actionNum = actionNum
+
+            # the static part of the temperature change equation, the CFM is 1700,
+            # the density of the air is 1.20, and the RPM is 300, the .05 is a constant for the equation to be in
+            # m^3/min from
+            # https://www.cuidevices.com/blog/understanding-airflow-fundamentals-for-proper-dc-fan-selection
+            cmm = 48 #m^3/min
+
+        def tempChange(self, action, time, tau):
+
+            return 0
+
+
+        # TODO FIND AN ACCEPTABLE VALUE FOR THIS CONSTANT
+
     def get_hvac(self, action):
-        heat_added = (action - 1) * self.hvac_temperature * self.tau.seconds
-        self.total_heat_added += heat_added
-        return heat_added
+        if(0<=action<=2):
+            heat_added = (action - 1) * self.hvac_temperature * self.tau.seconds
+            self.total_heat_added += heat_added
+            return heat_added
+        return 0
 
     def get_ground_temperature(self, time):
         # Very rough estimate, but the ground temperature appears to be about 10 on average
@@ -195,6 +226,10 @@ class HVACEnv(gym.Env):
         self.total_reward = 0
         self.air_temperature = self.weather_generator.temperature()
 
+
+        def get_temperature_world(time):
+            return self.state[0]
+
         def get_temperature_basement(time):
             return self.state[3]
 
@@ -207,6 +242,19 @@ class HVACEnv(gym.Env):
         k_insulated_boundary = float(cfg['initial_state'].get('insulated_boundary', '0.0000694'))
         k_uninsulated_boundary = float(cfg['initial_state'].get('uninsulated_boundary', '0.0011111'))
 
+
+        outsideName = "outside"
+        mainName = "main"
+        atticName = "attic"
+        basementName="basement"
+
+
+        volume = 1000
+        fanOutsideToMain = HVACEnv.Fan(roomAName=mainName, roomATempGetter=get_temperature_main, aVol=volume, roomBName=basementName,
+                                       roomBTempGetter=get_temperature_basement,bVol=volume, actionNum=3)
+
+
+        # rooms are 10m by 10m by 10m cubes
         self.basement = HVACEnv.Room(boundary_list=[
             # Basement-Earth Boundary
             # The weight is a half cube where 5 of the 6 sides are below ground)
@@ -214,8 +262,7 @@ class HVACEnv(gym.Env):
             # Basement-Main Boundary
             # The weight is a half cube where 1 of the 6 sides is touching the main level)
             HVACEnv.Boundary(k_uninsulated_boundary, get_temperature_main, (1 / 4))
-        ])
-
+        ], name=basementName, volume=1000)
         self.main = HVACEnv.Room(boundary_list=[
             # Main-Basement Boundary
             # The weight is a cube where 1 of the 6 sides is touching the main level)
@@ -226,8 +273,7 @@ class HVACEnv(gym.Env):
             # Main-Attic Boundary
             # The weight is a cube where 1 of the 6 sides is touching the main level)
             HVACEnv.Boundary(k_uninsulated_boundary, get_temperature_attic, (1 / 4))
-        ], hvac=self.get_hvac)
-
+        ], hvac=self.get_hvac, name=mainName, volume=1000)
         self.attic = HVACEnv.Room(boundary_list=[
             # Main-Attic Boundary
             # The weight is a cube where 1 of the 6 sides is touching the main level)
@@ -235,7 +281,8 @@ class HVACEnv(gym.Env):
             # Attic-Air Boundary
             # The weight is a cube where 5 of the 6 sides are below ground)
             HVACEnv.Boundary(k_insulated_boundary, self.get_air_temperature, (3 / 4))
-        ])
+        ], name=atticName, volume=1000)
+
 
         # Thresholds at which to fail the episode
         self.desired_temperature_low = 20
@@ -250,8 +297,10 @@ class HVACEnv(gym.Env):
             0	Turn the cooler on
             1   No action
             2	Turn the heater on
+            3   Fan of outside air into main room
+            
         '''
-        self.action_space = spaces.Discrete(3)
+        self.action_space = spaces.Discrete(4)
 
         '''
         Observation Space
@@ -270,7 +319,6 @@ class HVACEnv(gym.Env):
             0,
             0,
             0])
-
         high = np.array([
             np.finfo(np.float32).max,
             np.finfo(np.float32).max,
@@ -278,6 +326,8 @@ class HVACEnv(gym.Env):
             40,
             40,
             40])
+
+
         self.step_count = 0
         # 900 * 4* 24
         self.step_limit = int(cfg['params'].get('step_limit', '96'))
@@ -319,7 +369,12 @@ class HVACEnv(gym.Env):
         return reward
 
     def calculate_action_cost(self, action):
-        return -1 if action != 1 else 0
+        # HVAC rewards
+        if(0<=action<=2):
+            return -1 if action != 1 else 0
+
+        # fan rewards
+        return -.5
 
     # The weights 0.75 and 0.25 are arbitrary, but we probably don't want the learner to gain too much from no action
     def calculate_reward(self, state, action):
@@ -334,7 +389,7 @@ class HVACEnv(gym.Env):
         basement_temp_change_equation = self.basement.get_temp_change_eq()
         new_basement_temp = basement_temp_change_equation(self.time, self.tau, basement_temp, action) + basement_temp
 
-        # Main
+        # Main Room
         main_temp_change_equation = self.main.get_temp_change_eq()
         new_main_temp = main_temp_change_equation(self.time, self.tau, main_temp, action) + main_temp
 
