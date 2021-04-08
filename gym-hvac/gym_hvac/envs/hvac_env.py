@@ -158,18 +158,17 @@ class HVACEnv(gym.Env):
             self.boundary_list = boundary_list
             self.volume = volume
             self.hvac = hvac
-            self.fans= fans
 
-        def get_temp_change_eq(self):
+        def get_temp_change_eq(self,fans):
             def temp_change_eq(time, tau, current_temp, action):
                 return sum([tau.seconds * boundary.k * boundary.w * (boundary.t(time) - current_temp)
                             for boundary in self.boundary_list]) \
                        + (self.hvac(action) if self.hvac is not None else 0) \
-                       + sum([fan.tempChange(self.name, action, time,tau) for fan in self.fans])
+                       + sum([fan.tempChange(self.name, action, time,tau) for fan in fans])
             return temp_change_eq
 
     class Fan(object):
-        def __init__(self, roomAName, roomATempGetter, roomBName, roomBTempGetter, actionNum, aVol, bVol):
+        def __init__(self, roomAName, roomATempGetter, roomBName, roomBTempGetter, actionNums, aVol, bVol):
             self.a = roomAName
             self.aTempGet = roomATempGetter
             self.aVol = aVol
@@ -178,16 +177,31 @@ class HVACEnv(gym.Env):
             self.bTempGet = roomBTempGetter
             self.bVol = bVol
 
-            self.actionNum = actionNum
+            self.actionNums = actionNums
 
             # the static part of the temperature change equation, the CFM is 1700,
             # the density of the air is 1.20, and the RPM is 300, the .05 is a constant for the equation to be in
             # m^3/min from
             # https://www.cuidevices.com/blog/understanding-airflow-fundamentals-for-proper-dc-fan-selection
-            cmm = 48 #m^3/min
+            self.cmm = 48 #m^3/min
 
-        def tempChange(self, action, time, tau):
+        def tempChange(self, name, action, time, tau):
+            if(name==self.a or name==self.b) and action in self.actionNums:
+                overallVol = self.aVol + self.bVol
+                timeForCompleteMixSeconds = overallVol/self.cmm * 60
 
+                timeStepRateOfTempChange = min(tau.seconds/timeForCompleteMixSeconds,1)
+                endTemp = (((self.aTempGet(time)*self.aVol) + (self.bTempGet(time)*self.bVol)) / (overallVol))
+
+
+                chaneTemp = 0
+                if(name==self.a):
+                    chaneTemp = endTemp - self.aTempGet(time)
+                else:
+                    chaneTemp = endTemp - self.bTempGet(time)
+
+                chaneTemp *= timeStepRateOfTempChange
+                return chaneTemp
             return 0
 
 
@@ -249,9 +263,6 @@ class HVACEnv(gym.Env):
         basementName="basement"
 
 
-        volume = 1000
-        fanOutsideToMain = HVACEnv.Fan(roomAName=mainName, roomATempGetter=get_temperature_main, aVol=volume, roomBName=basementName,
-                                       roomBTempGetter=get_temperature_basement,bVol=volume, actionNum=3)
 
 
         # rooms are 10m by 10m by 10m cubes
@@ -284,6 +295,12 @@ class HVACEnv(gym.Env):
         ], name=atticName, volume=1000)
 
 
+        fanBasementToMain = HVACEnv.Fan(roomAName=mainName, roomATempGetter=get_temperature_main, aVol= self.main.volume, roomBName=basementName,
+                                        roomBTempGetter=get_temperature_basement,bVol=self.basement.volume, actionNums=[3,5])
+        fanMainToAttic = HVACEnv.Fan(roomAName=mainName, roomATempGetter=get_temperature_main, aVol= self.main.volume, roomBName=atticName,
+                                     roomBTempGetter=get_temperature_attic,bVol=self.attic.volume, actionNums=[4,5])
+        self.fans = [fanBasementToMain, fanMainToAttic]
+
         # Thresholds at which to fail the episode
         self.desired_temperature_low = 20
         self.desired_temperature_mean = 21.5
@@ -297,10 +314,12 @@ class HVACEnv(gym.Env):
             0	Turn the cooler on
             1   No action
             2	Turn the heater on
-            3   Fan of outside air into main room
+            3   Fan on from basement to main
+            4   Fan on from main to attic
+            5   all fans on
             
         '''
-        self.action_space = spaces.Discrete(4)
+        self.action_space = spaces.Discrete(6)
 
         '''
         Observation Space
@@ -386,15 +405,15 @@ class HVACEnv(gym.Env):
         air_temp, ground_temp, hvac_temp, basement_temp, main_temp, attic_temp = state
 
         # Basement
-        basement_temp_change_equation = self.basement.get_temp_change_eq()
+        basement_temp_change_equation = self.basement.get_temp_change_eq(self.fans)
         new_basement_temp = basement_temp_change_equation(self.time, self.tau, basement_temp, action) + basement_temp
 
         # Main Room
-        main_temp_change_equation = self.main.get_temp_change_eq()
+        main_temp_change_equation = self.main.get_temp_change_eq(self.fans)
         new_main_temp = main_temp_change_equation(self.time, self.tau, main_temp, action) + main_temp
 
         # Attic
-        attic_temp_change_equation = self.attic.get_temp_change_eq()
+        attic_temp_change_equation = self.attic.get_temp_change_eq(self.fans)
         new_attic_temp = attic_temp_change_equation(self.time, self.tau, attic_temp, action) + attic_temp
 
         self.state = (self.get_air_temperature(self.time),
@@ -416,7 +435,7 @@ class HVACEnv(gym.Env):
         done = bool(done_basement_lower or done_basement_upper
                     or done_main_lower or done_main_upper
                     or done_attic_lower or done_attic_upper or done_step_count_limit) \
-            and self.termination
+               and self.termination
 
         if not done:
             reward = self.calculate_reward(state, action)
