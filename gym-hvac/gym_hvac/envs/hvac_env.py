@@ -3,7 +3,7 @@ HVAC system following the classic cart-pole system implemented by Rich Sutton et
 Copied from http://incompleteideas.net/sutton/book/code/pole.c
 permalink: https://perma.cc/C9ZM-652R
 """
-
+from abc import ABC, abstractmethod
 from collections import namedtuple
 import csv
 import configparser
@@ -125,7 +125,9 @@ class HVACEnv(gym.Env):
         0	Turn the cooler on
         1   Turn everything off
         2	Turn the heater on
-        3   Fan of outside air into main room
+        3   Fan of main room to basement
+        4   Fan of main room to attic
+        5   All fans on
 
     Reward:
         Reward is 1 for every step taken, including the termination step
@@ -167,7 +169,12 @@ class HVACEnv(gym.Env):
                        + sum([fan.tempChange(self.name, action, time,tau) for fan in fans])
             return temp_change_eq
 
-    class Fan(object):
+    class Fan(ABC):
+        @abstractmethod
+        def tempChange(self, name, action, time, tau):
+            pass
+
+    class TwoRoomFan(Fan):
         def __init__(self, roomAName, roomATempGetter, roomBName, roomBTempGetter, actionNums, aVol, bVol):
             self.a = roomAName
             self.aTempGet = roomATempGetter
@@ -194,15 +201,17 @@ class HVACEnv(gym.Env):
                 endTemp = (((self.aTempGet(time)*self.aVol) + (self.bTempGet(time)*self.bVol)) / (overallVol))
 
 
-                chaneTemp = 0
+                changeTemp = 0
                 if(name==self.a):
-                    chaneTemp = endTemp - self.aTempGet(time)
+                    changeTemp = endTemp - self.aTempGet(time)
                 else:
-                    chaneTemp = endTemp - self.bTempGet(time)
+                    changeTemp = endTemp - self.bTempGet(time)
 
-                chaneTemp *= timeStepRateOfTempChange
-                return chaneTemp
+                changeTemp *= timeStepRateOfTempChange
+                return changeTemp
             return 0
+
+
 
 
         # TODO FIND AN ACCEPTABLE VALUE FOR THIS CONSTANT
@@ -295,10 +304,10 @@ class HVACEnv(gym.Env):
         ], name=atticName, volume=1000)
 
 
-        fanBasementToMain = HVACEnv.Fan(roomAName=mainName, roomATempGetter=get_temperature_main, aVol= self.main.volume, roomBName=basementName,
-                                        roomBTempGetter=get_temperature_basement,bVol=self.basement.volume, actionNums=[3,5])
-        fanMainToAttic = HVACEnv.Fan(roomAName=mainName, roomATempGetter=get_temperature_main, aVol= self.main.volume, roomBName=atticName,
-                                     roomBTempGetter=get_temperature_attic,bVol=self.attic.volume, actionNums=[4,5])
+        fanBasementToMain = HVACEnv.TwoRoomFan(roomAName=mainName, roomATempGetter=get_temperature_main, aVol= self.main.volume, roomBName=basementName,
+                                               roomBTempGetter=get_temperature_basement, bVol=self.basement.volume, actionNums=[3,5])
+        fanMainToAttic = HVACEnv.TwoRoomFan(roomAName=mainName, roomATempGetter=get_temperature_main, aVol= self.main.volume, roomBName=atticName,
+                                            roomBTempGetter=get_temperature_attic, bVol=self.attic.volume, actionNums=[4,5])
         self.fans = [fanBasementToMain, fanMainToAttic]
 
         # Thresholds at which to fail the episode
