@@ -2,13 +2,13 @@ import csv
 import random
 import gym
 import gym_hvac
+import time
 
 import numpy as np
 from collections import deque
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.optimizers import Adam
-
 ENV_NAME = "HVAC-v0"
 
 GAMMA = 0.95
@@ -62,7 +62,6 @@ class DQNSolver:
         self.exploration_rate *= EXPLORATION_DECAY
         self.exploration_rate = max(EXPLORATION_MIN, self.exploration_rate)
 
-
 def hvac(mode, name, limit):
     env = gym.make(ENV_NAME)
     observation_space = env.observation_space.shape[0]
@@ -87,38 +86,73 @@ def hvac(mode, name, limit):
                              'total_reward',
                              'terminal'])
 
-    while run < limit:
+    while run <= limit:
         state = env.reset()
         start_time = env.time
         state = np.reshape(state, [1, observation_space])
         step = 0
         while True:
-            action = dqn_solver.act(state, mode)
-            state_next, reward, terminal, info = env.step(action)
-            with open(outputFileName, 'a', newline='') as outfile:
-                csv_writer = csv.writer(outfile)
-                csv_writer.writerow([run, step, (env.time - start_time).total_seconds()] +
-                                    state_next.tolist() +
-                                    [env.total_heat_added, int(action), reward, env.total_reward, terminal])
-            reward = reward if not terminal else -reward
-            state_next = np.reshape(state_next, [1, observation_space])
-            dqn_solver.remember(state, action, reward, state_next, terminal)
-            state = state_next
-            if terminal:
-                print("Run: " + str(run) + ", exploration: " + str(dqn_solver.exploration_rate)
-                      + ", score: " + str(step) + ', total reward: ' + str(env.total_reward))
-                break
-            dqn_solver.experience_replay()
-            step += 1
+            try:
+                action = dqn_solver.act(state, mode)
+                state_next, reward, terminal, info = env.step(action)
+                with open(outputFileName, 'a', newline='') as outfile:
+                    csv_writer = csv.writer(outfile)
+                    csv_writer.writerow([run, step, (env.time - start_time).total_seconds()] +
+                                        state_next.tolist() +
+                                        [env.total_heat_added, int(action), reward, env.total_reward, terminal])
+                reward = reward if not terminal else -reward
+                state_next = np.reshape(state_next, [1, observation_space])
+                dqn_solver.remember(state, action, reward, state_next, terminal)
+                state = state_next
+                if terminal:
+                    print("Run: " + str(run) + ", exploration: " + str(dqn_solver.exploration_rate)
+                          + ", score: " + str(step) + ', total reward: ' + str(env.total_reward))
+                    break
+                dqn_solver.experience_replay()
+                step += 1
+            except(PermissionError):
+                print("trying again soon")
+                time.sleep(10)
         run += 1
 
-# if mode = 0, runs old model, if mode = 1 runs new model
-limit = 250
+# # if mode = 0, runs old model, if mode = 1 runs new model
+# limit = 250
+# mode = 0
+# name = "old250"
+# hvac(mode,name,limit)
+# mode = 1
+# name = "new250"
+# hvac(mode,name,limit)
+#
+#
+# limit = 500
+# mode = 0
+# name = "old500"
+# hvac(mode,name,limit)
+# mode = 1
+# name = "new500"
+# hvac(mode,name,limit)
+#
+# limit = 1000
+# mode = 0
+# name = "old1000"
+# hvac(mode,name,limit)
+# mode = 1
+# name = "new1000"
+# hvac(mode,name,limit)
 
-mode = 0
-name = "old"
+limit = 2000
+# mode = 0
+# name = "old2000"
+# hvac(mode,name,limit)
+mode = 1
+name = "new2000"
 hvac(mode,name,limit)
 
+limit = 5000
+# mode = 0
+# name = "old5000"
+# hvac(mode,name,limit)
 mode = 1
-name = "new"
+name = "new5000"
 hvac(mode,name,limit)
