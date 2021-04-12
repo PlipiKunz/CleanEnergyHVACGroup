@@ -32,7 +32,7 @@ def set_size(fig, size, dpi=100, eps=1e-2, give_up=2, min_size_px=10):
             return False
 
 
-def plotter(episode, results_filename, output_dir, argv=None):
+def plotter(episode, results_filename, output_dir, name, argv=None):
     sns.set(style="darkgrid")
     df = pd.read_csv(results_filename)
     df = df[df['episode'] == episode]
@@ -69,13 +69,13 @@ def plotter(episode, results_filename, output_dir, argv=None):
     #     item.set_rotation(60)
     for item in ax3.get_xticklabels():
         item.set_rotation(30)
-    if argv is not None:
-        ax1.set_xlim(argv['xlim_left'], argv['xlim_right'])
-        ax1.set_ylim(argv['temp_ylim_lower'], argv['temp_ylim_upper'])
-        ax2.set_xlim(argv['xlim_left'], argv['xlim_right'])
-        ax2.set_ylim(-5, 5)
-        ax3.set_xlim(argv['xlim_left'], argv['xlim_right'])
-        ax3.set_ylim(argv['reward_ylim_lower'], argv['reward_ylim_upper'])
+    # if argv is not None:
+        # ax1.set_xlim(argv['xlim_left'], argv['xlim_right'])
+        # ax1.set_ylim(argv['temp_ylim_lower'], argv['temp_ylim_upper'])
+        # ax2.set_xlim(argv['xlim_left'], argv['xlim_right'])
+        # ax2.set_ylim(-5, 5)
+        # ax3.set_xlim(argv['xlim_left'], argv['xlim_right'])
+        # ax3.set_ylim(argv['reward_ylim_lower'], argv['reward_ylim_upper'])
     # ax1.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     ax1.legend(bbox_to_anchor=(1, 1), loc=1, framealpha=0.5)
     ax2.legend().set_visible(False)
@@ -86,45 +86,62 @@ def plotter(episode, results_filename, output_dir, argv=None):
     ax2.set_ylabel('HVAC Temperature (C)\n6 Hour Rolling Mean\n')
     ax3.set_ylabel('Reward')
     plt.xlabel('Time (Seconds)')
-    plt.savefig(os.path.join(output_dir, '{:0>3}.png'.format(episode)))
+    plt.savefig(os.path.join(output_dir, name + '{:0>3}.png'.format(episode)))
     # plt.show()
     plt.close()
 
 
 def parse_args(argv):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--temp_ylim_lower', type=float, default=-5)
-    parser.add_argument('--temp_ylim_upper', type=float, default=40)
-    parser.add_argument('--reward_ylim_lower', type=float, default=-10)
-    parser.add_argument('--reward_ylim_upper', type=float, default=100)
-    parser.add_argument('--xlim_left', type=float, default=0)
-    parser.add_argument('--xlim_right', type=float, default=672*900)
+    # parser.add_argument('--temp_ylim_lower', type=float, default=-5)
+    # parser.add_argument('--temp_ylim_upper', type=float, default=40)
+    # parser.add_argument('--reward_ylim_lower', type=float, default=-10)
+    # parser.add_argument('--reward_ylim_upper', type=float, default=250)
+    # parser.add_argument('--xlim_left', type=float, default=0)
+    # parser.add_argument('--xlim_right', type=float, default=672*900)
     args = parser.parse_args(argv)
     return vars(args)
 
 
 def parse_config_file(config_file_name):
-    with open(config_file_name, 'r') as config_file:
-        argv = config_file.read().replace('\n', '').split(' ')
+    # with open(config_file_name, 'r') as config_file:
+    #     argv = config_file.read().replace('\n', '').split(' ')
     return parse_args(argv)
 
 
 def __main__(argv):
     parser = argparse.ArgumentParser()
-    parser.add_argument('config_file')
+    parser.add_argument('name')
     parser.add_argument('output_dir')
     parser.add_argument('episode_upper', type=int)
-    parser.add_argument('--episode_lower', type=int, default=0)
+    parser.add_argument('episode_lower', type=int, default=0)
+    parser.add_argument('inputResultsFile', type=str, default="inputs/oldResults.csv")
     args = parser.parse_args(argv)
     vargs = vars(args)
-    arg_file_vargs = parse_config_file(vargs['config_file'])
-    for episode in range(vargs['episode_lower'], vargs['episode_upper'] + 1):
+    for episode in [vargs['episode_lower'], vargs['episode_upper']]:
         print('Plotting episode {}'.format(episode))
         plotter(episode,
-                os.path.join(vargs['output_dir'], 'results.csv'),
+                os.path.join(vargs['inputResultsFile']),
                 vargs['output_dir'],
-                arg_file_vargs)
+                vargs['name'])
 
 
-if __name__ == '__main__':
-    __main__(sys.argv[1:])
+# if __name__ == '__main__':
+#     __main__(sys.argv[1:])
+
+name="OLD"
+outputDir = "outputs"
+episodeUpper = "250"
+episodeLower = "0"
+inputfile = "inputs/oldResults.csv"
+argv = [name, outputDir, episodeUpper, episodeLower, inputfile]
+__main__(argv)
+
+
+# name="OLD"
+# outputDir = "outputs"
+# episodeUpper = "250"
+# episodeLower = "0"
+# inputfile = "inputs/oldResults.csv"
+# argv = [name, outputDir, episodeUpper, episodeLower, inputfile]
+# __main__(argv)

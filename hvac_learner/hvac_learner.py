@@ -39,9 +39,12 @@ class DQNSolver:
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
 
-    def act(self, state):
+    def act(self, state,mode):
         if np.random.rand() < self.exploration_rate:
-            return random.randrange(self.action_space)
+            size = self.action_space
+            if(mode==0):
+                size = 3
+            return random.randrange(size)
         q_values = self.model.predict(state)
         return np.argmax(q_values[0])
 
@@ -60,13 +63,14 @@ class DQNSolver:
         self.exploration_rate = max(EXPLORATION_MIN, self.exploration_rate)
 
 
-def hvac():
+def hvac(mode, name, limit):
     env = gym.make(ENV_NAME)
     observation_space = env.observation_space.shape[0]
     action_space = env.action_space.n
     dqn_solver = DQNSolver(observation_space, action_space)
     run = 0
-    with open('output/results.csv', 'w', newline='') as outfile:
+    outputFileName = 'output/' + name + 'results.csv'
+    with open(outputFileName, 'w', newline='') as outfile:
         csv_writer = csv.writer(outfile)
         csv_writer.writerow(['episode',
                              'step',
@@ -83,15 +87,15 @@ def hvac():
                              'total_reward',
                              'terminal'])
 
-    while True:
+    while run < limit:
         state = env.reset()
         start_time = env.time
         state = np.reshape(state, [1, observation_space])
         step = 0
         while True:
-            action = dqn_solver.act(state)
+            action = dqn_solver.act(state, mode)
             state_next, reward, terminal, info = env.step(action)
-            with open('output/results.csv', 'a', newline='') as outfile:
+            with open(outputFileName, 'a', newline='') as outfile:
                 csv_writer = csv.writer(outfile)
                 csv_writer.writerow([run, step, (env.time - start_time).total_seconds()] +
                                     state_next.tolist() +
@@ -108,6 +112,13 @@ def hvac():
             step += 1
         run += 1
 
+# if mode = 0, runs old model, if mode = 1 runs new model
+limit = 250
 
-if __name__ == "__main__":
-    hvac()
+mode = 0
+name = "old"
+hvac(mode,name,limit)
+
+mode = 1
+name = "new"
+hvac(mode,name,limit)
