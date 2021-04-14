@@ -90,11 +90,11 @@ def __main__(argv):
 
 
 
-name="NEW500"
+name="NEW250"
 outputDir = "outputs"
-episodeUpper = "500"
+episodeUpper = "250"
 episodeLower = "0"
-inputfile = "inputs/new500results.csv"
+inputfile = "inputs/new250results.csv"
 argv = [name, outputDir, episodeUpper, episodeLower, inputfile]
 __main__(argv)
 

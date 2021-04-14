@@ -115,6 +115,7 @@ class HVACEnv(gym.Env):
         3	Temperature Basement        0           40
         4	Temperature Main Floor      0           40
         5	Temperature Attic           0           40
+        6   Time of Day
 
     "30 is hot, 20 is pleasing, 10 is cold, 0 is freezing"
     20 Celsius (68 F) is roughly room temperature, and 30 and 10 make convenient hot/cold thresholds.
@@ -272,8 +273,6 @@ class HVACEnv(gym.Env):
         basementName="basement"
 
 
-
-
         # rooms are 10m by 10m by 10m cubes
         self.basement = HVACEnv.Room(boundary_list=[
             # Basement-Earth Boundary
@@ -339,6 +338,7 @@ class HVACEnv(gym.Env):
             3	Temperature Basement        0           40
             4	Temperature Main Floor      0           40
             5	Temperature Attic           0           40
+            6   Time                        0           2459
         '''
         low = np.array([
             -273,
@@ -346,19 +346,23 @@ class HVACEnv(gym.Env):
             -273,
             0,
             0,
-            0])
+            0,
+            0
+        ])
         high = np.array([
             np.finfo(np.float32).max,
             np.finfo(np.float32).max,
             np.finfo(np.float32).max,
             40,
             40,
-            40])
+            40,
+            23
+        ])
 
 
         self.step_count = 0
         # 900 * 4* 24
-        self.step_limit = int(cfg['params'].get('step_limit', '96'))
+        self.step_limit = len(self.weather_generator.weather)-2
         self.time = self.weather_generator.time()
 
         # Tau is the time scale (seconds)
@@ -411,7 +415,7 @@ class HVACEnv(gym.Env):
     def step(self, action):
         assert self.action_space.contains(action), "%r (%s) invalid" % (action, type(action))
         state = self.state
-        air_temp, ground_temp, hvac_temp, basement_temp, main_temp, attic_temp = state
+        air_temp, ground_temp, hvac_temp, basement_temp, main_temp, attic_temp,t = state
 
         # Basement
         basement_temp_change_equation = self.basement.get_temp_change_eq(self.fans)
@@ -430,7 +434,11 @@ class HVACEnv(gym.Env):
                       self.get_hvac(action),
                       new_basement_temp,
                       new_main_temp,
-                      new_attic_temp)
+                      new_attic_temp,
+                      self.time.time().hour
+                      )
+        # print(t)
+
 
         # Calculate done - Separated for debugging
         done_basement_lower = new_basement_temp < self.lower_temperature_threshold
@@ -472,7 +480,8 @@ class HVACEnv(gym.Env):
         self.state = np.concatenate((np.array([self.weather_generator.temperature(),
                                                self.get_ground_temperature(0),
                                                0]),
-                                     self.np_random.uniform(low=10, high=30, size=(3,))), axis=0)
+                                     # Note if you must change the size of the observations, change the size in below array to match total - 3
+                                     self.np_random.uniform(low=10, high=30, size=(4,))), axis=0)
         self.steps_beyond_done = None
         return np.array(self.state)
 

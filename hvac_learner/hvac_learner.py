@@ -15,7 +15,7 @@ GAMMA = 0.95
 LEARNING_RATE = 0.001
 
 MEMORY_SIZE = 1000000
-BATCH_SIZE = 20
+BATCH_SIZE = 50
 
 EXPLORATION_MAX = 1.0
 EXPLORATION_MIN = 0.01
@@ -23,7 +23,6 @@ EXPLORATION_DECAY = 0.99995
 
 
 class DQNSolver:
-
     def __init__(self, observation_space, action_space):
         self.exploration_rate = EXPLORATION_MAX
 
@@ -120,43 +119,9 @@ def hvac(mode, name, limit):
         run += 1
 
 # # if mode = 0, runs old model, if mode = 1 runs new model
-# limit = 250
-# mode = 0
-# name = "old250"
-# hvac(mode,name,limit)
-#
-# mode = 1
-# name = "new250"
-# hvac(mode,name,limit)
-#
-#
-# limit = 500
-# mode = 0
-# name = "old500"
-# hvac(mode,name,limit)
-# mode = 1
-# name = "new500"
-# hvac(mode,name,limit)
-#
-# limit = 1000
-# mode = 0
-# name = "old1000"
-# hvac(mode,name,limit)
-# mode = 1
-# name = "new1000"
-# hvac(mode,name,limit)
-
-# limit = 2000
-# mode = 0
-# name = "old2000"
-# hvac(mode,name,limit)
-# mode = 1
-# name = "new2000"
-# hvac(mode,name,limit)
-
 limit = 15000
 # mode = 0
-# name = "old5000"
+# name = "old15000"
 # hvac(mode,name,limit)
 mode = 1
 name = "new15000"
