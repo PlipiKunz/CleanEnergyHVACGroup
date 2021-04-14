@@ -92,27 +92,31 @@ def hvac(mode, name, limit):
         state = np.reshape(state, [1, observation_space])
         step = 0
         while True:
-            try:
-                action = dqn_solver.act(state, mode)
-                state_next, reward, terminal, info = env.step(action)
-                with open(outputFileName, 'a', newline='') as outfile:
-                    csv_writer = csv.writer(outfile)
-                    csv_writer.writerow([run, step, (env.time - start_time).total_seconds()] +
-                                        state_next.tolist() +
-                                        [env.total_heat_added, int(action), reward, env.total_reward, terminal])
-                reward = reward if not terminal else -reward
-                state_next = np.reshape(state_next, [1, observation_space])
-                dqn_solver.remember(state, action, reward, state_next, terminal)
-                state = state_next
-                if terminal:
-                    print("Run: " + str(run) + ", exploration: " + str(dqn_solver.exploration_rate)
-                          + ", score: " + str(step) + ', total reward: ' + str(env.total_reward))
-                    break
-                dqn_solver.experience_replay()
-                step += 1
-            except(PermissionError):
-                print("trying again soon")
-                time.sleep(10)
+            action = dqn_solver.act(state, mode)
+            state_next, reward, terminal, info = env.step(action)
+            notWrote = True
+            while(notWrote):
+                try:
+                    with open(outputFileName, 'a', newline='') as outfile:
+                        csv_writer = csv.writer(outfile)
+                        csv_writer.writerow([run, step, (env.time - start_time).total_seconds()] +
+                                            state_next.tolist() +
+                                            [env.total_heat_added, int(action), reward, env.total_reward, terminal])
+                    notWrote = False
+                except(PermissionError):
+                    print("trying again soon")
+                    time.sleep(1)
+
+            reward = reward if not terminal else -reward
+            state_next = np.reshape(state_next, [1, observation_space])
+            dqn_solver.remember(state, action, reward, state_next, terminal)
+            state = state_next
+            if terminal:
+                print("Run: " + str(run) + ", exploration: " + str(dqn_solver.exploration_rate)
+                      + ", score: " + str(step) + ', total reward: ' + str(env.total_reward))
+                break
+            dqn_solver.experience_replay()
+            step += 1
         run += 1
 
 # # if mode = 0, runs old model, if mode = 1 runs new model
@@ -120,6 +124,7 @@ def hvac(mode, name, limit):
 # mode = 0
 # name = "old250"
 # hvac(mode,name,limit)
+#
 # mode = 1
 # name = "new250"
 # hvac(mode,name,limit)
@@ -141,18 +146,18 @@ def hvac(mode, name, limit):
 # name = "new1000"
 # hvac(mode,name,limit)
 
-limit = 2000
+# limit = 2000
 # mode = 0
 # name = "old2000"
 # hvac(mode,name,limit)
-mode = 1
-name = "new2000"
-hvac(mode,name,limit)
+# mode = 1
+# name = "new2000"
+# hvac(mode,name,limit)
 
-limit = 5000
+limit = 15000
 # mode = 0
 # name = "old5000"
 # hvac(mode,name,limit)
 mode = 1
-name = "new5000"
+name = "new15000"
 hvac(mode,name,limit)

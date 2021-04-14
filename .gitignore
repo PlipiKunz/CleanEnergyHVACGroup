@@ -2,7 +2,10 @@
 *.egg-info
 /gym_environment_cookie
 *__pycache__*
+gym_hvac_tester/outputs/*
+gym_hvac_tester/inputs/*
 gym_hvac_tester/output/*
 gym_hvac_tester/temp/*
 hvac_learner/output/*
 *.ini
+*.png

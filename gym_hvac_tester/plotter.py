@@ -36,14 +36,12 @@ def plotter(results_filename, output_dir, name, argv=None):
     sns.set(style="darkgrid")
     df = pd.read_csv(results_filename)
     df = df[df['terminal'] == True]
-    # df['time'] = pd.to_timedelta(df['time'], unit='seconds')
     x = ['episode']
     y_reward = ['total_reward']
     reward_df = pd.melt(df[x + y_reward], id_vars=x, value_vars=y_reward)
 
     dpi = 150
-    fig, (ax3) = plt.subplots(1, sharex=True, facecolor='w', edgecolor='k', figsize=(1920/dpi, 1080/dpi),
-                                        dpi=dpi)
+    fig, (ax3) = plt.subplots(1, sharex=True, facecolor='w', edgecolor='k', figsize=(1920/dpi, 1080/dpi),dpi=dpi)
     fig.suptitle('Agent Learning to Maximize User Comfort and Energy Cost')
     sns.lineplot(x='episode', y='value', hue='variable', data=reward_df, ax=ax3)
 
@@ -90,19 +88,13 @@ def __main__(argv):
 # if __name__ == '__main__':
 #     __main__(sys.argv[1:])
 
-name="OLDDumb"
-outputDir = "outputs"
-episodeUpper = "250"
-episodeLower = "0"
-inputfile = "inputs/old250results.csv"
-argv = [name, outputDir, episodeUpper, episodeLower, inputfile]
-__main__(argv)
 
-name="NEWSmart"
+
+name="NEW500"
 outputDir = "outputs"
-episodeUpper = "1000"
+episodeUpper = "500"
 episodeLower = "0"
-inputfile = "inputs/new1000results.csv"
+inputfile = "inputs/new500results.csv"
 argv = [name, outputDir, episodeUpper, episodeLower, inputfile]
 __main__(argv)
 
