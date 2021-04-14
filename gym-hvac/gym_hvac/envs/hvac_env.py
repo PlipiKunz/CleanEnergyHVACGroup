@@ -481,7 +481,8 @@ class HVACEnv(gym.Env):
                                                self.get_ground_temperature(0),
                                                0]),
                                      # Note if you must change the size of the observations, change the size in below array to match total - 3
-                                     self.np_random.uniform(low=10, high=30, size=(4,))), axis=0)
+                                     self.np_random.uniform(low=10, high=30, size=(3,)),
+                                     [self.time.time().hour]), axis=0)
         self.steps_beyond_done = None
         return np.array(self.state)
 

@@ -21,7 +21,6 @@ EXPLORATION_MAX = 1.0
 EXPLORATION_MIN = 0.01
 EXPLORATION_DECAY = 0.99995
 
-
 class DQNSolver:
     def __init__(self, observation_space, action_space):
         self.exploration_rate = EXPLORATION_MAX
@@ -119,10 +118,26 @@ def hvac(mode, name, limit):
         run += 1
 
 # # if mode = 0, runs old model, if mode = 1 runs new model
-limit = 15000
-# mode = 0
-# name = "old15000"
-# hvac(mode,name,limit)
+limit = 250
+mode = 0
+name = "old250"
+hvac(mode,name,limit)
 mode = 1
-name = "new15000"
+name = "newest250"
+hvac(mode,name,limit)
+
+limit = 1000
+mode = 0
+name = "old1000"
+hvac(mode,name,limit)
+mode = 1
+name = "newest1000"
+hvac(mode,name,limit)
+
+limit = 5000
+mode = 0
+name = "old5000"
+hvac(mode,name,limit)
+mode = 1
+name = "newest5000"
 hvac(mode,name,limit)
