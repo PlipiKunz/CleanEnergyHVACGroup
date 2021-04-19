@@ -90,11 +90,11 @@ def __main__(argv):
 
 
 
-name="NEW250"
+name="Learning Model from Example"
 outputDir = "outputs"
-episodeUpper = "250"
+episodeUpper = "421"
 episodeLower = "0"
-inputfile = "inputs/new250results.csv"
+inputfile = "inputs/LearningModelFromExampleQuickresults.csv"
 argv = [name, outputDir, episodeUpper, episodeLower, inputfile]
 __main__(argv)
 
