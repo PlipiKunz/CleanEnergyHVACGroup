@@ -20,7 +20,7 @@ BATCH_SIZE = 50
 
 EXPLORATION_MAX = 1.0
 EXPLORATION_MIN = 0.01
-EXPLORATION_DECAY = 0.99995
+EXPLORATION_DECAY = 0.99995 #0.99995
 
 class DQNSolver:
     def __init__(self, observation_space, action_space):
@@ -109,6 +109,7 @@ def hvac(mode, name, limit, resume=False, inputFile="", learn=True, passedInExpl
                              'basement_temperature',
                              'main_temperature',
                              'attic_temperature',
+                             'air_temperature in 2 hour',
                              'heat_added',
                              'action',
                              'reward',
@@ -148,7 +149,6 @@ def hvac(mode, name, limit, resume=False, inputFile="", learn=True, passedInExpl
 
             if(learn):
                 dqn_solver.remember(state, action, reward, state_next, terminal)
-
                 if(step%BATCH_SIZE==0):
                     dqn_solver.experience_replay()
 
@@ -169,34 +169,28 @@ def hvac(mode, name, limit, resume=False, inputFile="", learn=True, passedInExpl
 # for relearning from old models, dont start at max learn rate or it will go forget everything
 
 
-limit = 250
-mode = 0
-name = "NormalOld250"
-print(name)
-hvac(mode, name, limit)
+
+limit = 10000
+# mode = 0
+# name = "NormalOldLong"
+# print(name)
+# hvac(mode, name, limit)
 mode = 1
-name = "NormalNew250"
-print(name)
-hvac(mode, name, limit)
-
-
-limit = 1500
-mode = 0
-name = "NormalOldLong"
-print(name)
-hvac(mode, name, limit)
-mode = 1500
 name = "NormalNewLong"
 print(name)
 hvac(mode, name, limit)
 
 
-
-# limit = 5000
-# mode = 1
-# name = "LearningModelFromExampleQuick"
+limit = 20000
+# mode = 0
+# name = "NormalOldVeryLong"
 # print(name)
-# hvac(mode, name, limit, True, "assets/newest1000FromExample_204.h5", passedInExplorationRate=.15)
+# hvac(mode, name, limit)
+mode = 1
+name = "NormalNewVeryLong"
+print(name)
+hvac(mode, name, limit)
+
 
 # limit = 250
 # mode = 1

@@ -43,6 +43,20 @@ class WeatherGenerator(object):
             idx += 1
         self.current_idx = idx
 
+    def temp_from_datetime(self, custom_datetime):
+        idx = 0
+        while custom_datetime > self.weather[idx]['datetime'] and idx < len(self.weather) - 1:
+            idx += 1
+
+        old = self.current_idx;
+
+
+        self.current_idx = idx
+        temp = self.temperature()
+        self.current_idx = old
+
+        return temp
+
     def step(self, current_time):
         if self.current_idx + 2 >= len(self.weather):
             return self.weather[self.current_idx]['temperature']
@@ -230,6 +244,10 @@ class HVACEnv(gym.Env):
         # For now just use 0 (or 40)
         return self.weather_generator.step(time)
 
+    def get_air_temp_future(self, timeHours):
+        futureTime = self.time + datetime.timedelta(seconds=(timeHours * 3600))
+        return self.weather_generator.temp_from_datetime(futureTime)
+
     def __init__(self):
         cfg = configparser.ConfigParser()
         cfg.read(os.path.join(os.path.dirname(__file__), 'resources/env_config.ini'))
@@ -335,6 +353,7 @@ class HVACEnv(gym.Env):
             3	Temperature Basement        0           40
             4	Temperature Main Floor      0           40
             5	Temperature Attic           0           40
+            6   Temp in 2 hours              -273        Inf
         '''
         low = np.array([
             -273,
@@ -343,6 +362,7 @@ class HVACEnv(gym.Env):
             0,
             0,
             0,
+            -273,
 
         ])
         high = np.array([
@@ -351,7 +371,8 @@ class HVACEnv(gym.Env):
             np.finfo(np.float32).max,
             40,
             40,
-            40
+            40,
+            np.finfo(np.float32).max,
         ])
 
 
@@ -400,7 +421,9 @@ class HVACEnv(gym.Env):
         if(0<=action<=2):
             return -1 if action != 1 else 0
 
-        # fan rewards
+        # Fan costs
+        if(3<=action<=4):
+            return -.25
         return -.5
 
     # The weights 0.75 and 0.25 are arbitrary, but we probably don't want the learner to gain too much from no action
@@ -410,7 +433,7 @@ class HVACEnv(gym.Env):
     def step(self, action):
         assert self.action_space.contains(action), "%r (%s) invalid" % (action, type(action))
         state = self.state
-        air_temp, ground_temp, hvac_temp, basement_temp, main_temp, attic_temp= state
+        air_temp, ground_temp, hvac_temp, basement_temp, main_temp, attic_temp, twohourt = state
 
         # Basement
         basement_temp_change_equation = self.basement.get_temp_change_eq(self.fans)
@@ -424,13 +447,20 @@ class HVACEnv(gym.Env):
         attic_temp_change_equation = self.attic.get_temp_change_eq(self.fans)
         new_attic_temp = attic_temp_change_equation(self.time, self.tau, attic_temp, action) + attic_temp
 
+
+
+
         self.state = (self.get_air_temperature(self.time),
                       self.get_ground_temperature(self.time),
                       self.get_hvac(action),
                       new_basement_temp,
                       new_main_temp,
                       new_attic_temp,
+                      self.get_air_temp_future(2),
                       )
+
+
+
         # print(t)
 
 
@@ -477,7 +507,13 @@ class HVACEnv(gym.Env):
                                                self.get_ground_temperature(0),
                                                0]),
                                      # Note if you must change the size of the observations, change the size in below array to match total - 3
-                                     self.np_random.uniform(low=10, high=30, size=(3,))), axis=0)
+                                     self.np_random.uniform(low=20, high=23, size=(3,)),
+
+                                     np.array([
+                                         self.get_air_temp_future(2),
+                                     ])
+                                     ), axis=0)
+
         self.steps_beyond_done = None
         return np.array(self.state)
 
