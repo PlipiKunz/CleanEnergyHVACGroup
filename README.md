@@ -2,6 +2,8 @@
 
 ## Introduction
 
+_DISCLAIMER: This README is an update of the origional made by Jordan Devanport, I Johnathan Kunz have extended the simulation by adding fans between rooms, among other things. The readme is basically the origional one, but I have changed and added some stuff here and there.
+
 _DISCLAIMER: This README is directed at future Computer Science students at Utah State University that may want to continue this project._
 
 Smart HVAC systems are increasing in importance as the climate changes. In the next 30 years, the demand for air conditioning is expected to increase three-fold as the Earth warms and warm countries develop. This project uses reinforcement learning to optimize a smart thermostat. 
@@ -37,6 +39,7 @@ These are observations the learner receives from the environment. In a realistic
 | 3   | Temperature Basement   | 0    | 40  |
 | 4   | Temperature Main Floor | 0    | 40  |
 | 5   | Temperature Attic      | 0    | 40  |
+| 5   | Temperature Air in 2hrs| -273 | Inf |
 
 #### Action Space
 
@@ -44,13 +47,16 @@ These are the possible actions the learner can take to modify the environment. I
 
 | Num | Action                              |
 |-----|-------------------------------------|
-| 0   | Turn the cooler on                  |
-| 1   | No action or turn off heater/cooler |
-| 2   | Turn the heater on                  |
+| 0   | Run Cooler               	    |
+| 1   | Run Nothing 			    |
+| 2   | Run Heater                 	    |
+| 3   | Run Fan between basement and main   |
+| 4   | Run Fan between main and attic      |
+| 5   | Run all Fans                        |
 
 #### Initialization
 
-The initialization function sets up the static environment. This includes the rooms which are modeled as a set of boundaries (walls) and optionally an HVAC unit. Currently the main floor is the only floor with an HVAC unit. The init function also sets up the weather generator object (which isn't actually a Python generator). The weather generator keeps track of weather patterns found in `gym-hvac/gym_hvac/envs/resources/weather.csv`. This weather data is hourly weather data near Utah State University from 2013-2019.
+The initialization function sets up the static environment. This includes the rooms which are modeled as a set of boundaries (walls) and optionally an HVAC units and fans between rooms. Currently the main floor is the only floor with an HVAC unit, and all rooms connect via fans to their neighbors. The init function also sets up the weather generator object (which isn't actually a Python generator). The weather generator keeps track of weather patterns found in `gym-hvac/gym_hvac/envs/resources/weather.csv`. This weather data is hourly weather data near Utah State University from 2013-2019.
 
 #### Reset Function
 
@@ -90,19 +96,7 @@ I created a test script `gym_hvac_tester/tester.py` to help fine tune the parame
 
 ## Plotters
 
-The plotters were created to create plots for the final presentation. They use pandas, seaborn, and Matplotlib to to plot temperature trends, as well as other trends.
-
-### FFMPEG Commands
-
-I used FFMPEG to convert the sequence of graphs into an animation.
-
-#### Convert images to video
-
-`ffmpeg -r 4 -f image2 -s 1920x1080 -i %03d.png -vcodec libx264 -crf 25  -pix_fmt yuv420p output.mp4`
-
-#### Add frame number to x=20, y=20
- 
-`ffmpeg -i input.mp4 -vf "drawtext=fontfile=Arial.ttf: text='%{frame_num}': start_number=1: x=20: y=20: fontcolor=black : fontsize=20: box=1: boxcolor=white: boxborderw=5" -c:a copy output.mp4`
+The plotter was created to create plots for the final presentation. It uses pandas, seaborn, and Matplotlib to to plot temperature trends, as well as other trends.
 
 ## References
 

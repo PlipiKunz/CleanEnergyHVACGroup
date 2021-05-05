@@ -144,28 +144,36 @@ def __main__(argv):
 
 
 
-name="Non-Learning, Updated Model from Example"
+name="Non-Learning, Updated Model from Example, no future time"
 outputDir = "outputs"
 episodeUpper = "250"
 episodeLower = "0"
-inputfile = "inputs/NonLearningModelFromExampleQuickresults.csv"
+inputfile = "inputs/Model without future time/NonLearningModelFromExampleQuickresults.csv"
 argv = [name, outputDir, episodeUpper, episodeLower, inputfile]
 __main__(argv)
 
-
-name="Learning, Updated Model Long Form"
+name="Learning, Updated Model Long Form, no future time"
 outputDir = "outputs"
-episodeUpper = "15000"
+episodeUpper = "4400"
 episodeLower = "0"
-inputfile = "inputs/NormalNewVeryLongresults.csv"
+inputfile = "inputs/Model without future time/NormalNewVeryLongresults.csv"
 argv = [name, outputDir, episodeUpper, episodeLower, inputfile]
 __main__(argv)
 
-
-name="Learning, Non-Updated Model Long Form"
+name="Learning, Old Model Longer Form, no future time"
 outputDir = "outputs"
-episodeUpper = "15000"
+episodeUpper = "10627"
 episodeLower = "0"
-inputfile = "inputs/NormalOldVeryLongresults.csv"
+inputfile = "inputs/Model without future time/NormalOldVeryLongresults.csv"
 argv = [name, outputDir, episodeUpper, episodeLower, inputfile]
 __main__(argv)
+
+
+name="Learning, Updated Model Longer Form, future time"
+outputDir = "outputs"
+episodeUpper = "6639"
+episodeLower = "0"
+inputfile = "inputs/Model with future time/NormalNewLongTry2results.csv"
+argv = [name, outputDir, episodeUpper, episodeLower, inputfile]
+__main__(argv)
+

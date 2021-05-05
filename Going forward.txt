@@ -1,16 +1,9 @@
-Understand the eppy api. (2 weeks)
-    - What we need to put into it?
-        - step/action
-        - HVAC Templates
-        - Start with a simple / small zone - 1
-    - What we want to get out of it?
-        - state/reward
-    - What do we want to optimize?
-        - 
+Allow the gym environment to take custom housemodel or seperate into a seperate file so that the logic doenst get messed up when changing the house model.
 
-Meet next week to determine a "Going forward"
+Add fans to circulate a single rooms air.
 
+Add fans/windows to outside air.
 
-Starting point: https://github.com/NREL/EnergyPlus/tree/develop/testfiles/BasicsFiles
-Need to find documentation on all of the parameters of the .idf file.
-Need to figure out what the output from a .idf file will be.
+Refactor to have fans stay on and need to toggle their positions on or off so other things can happen concurently.\
+
+Hook to a real model home.

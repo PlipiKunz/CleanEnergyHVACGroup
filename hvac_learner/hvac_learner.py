@@ -19,7 +19,7 @@ MEMORY_SIZE = 1000000
 BATCH_SIZE = 50
 
 EXPLORATION_MAX = 1.0
-EXPLORATION_MIN = 0.01
+EXPLORATION_MIN = 0.05
 EXPLORATION_DECAY = 0.99995 #0.99995
 
 class DQNSolver:
@@ -168,32 +168,8 @@ def hvac(mode, name, limit, resume=False, inputFile="", learn=True, passedInExpl
 # # if mode = 0, runs old model, if mode = 1 runs new model
 # for relearning from old models, dont start at max learn rate or it will go forget everything
 
-
-
-limit = 10000
-# mode = 0
-# name = "NormalOldLong"
-# print(name)
-# hvac(mode, name, limit)
+limit = 5000
 mode = 1
-name = "NormalNewLong"
+name = "LearningModelFromGoodExampleWithFutureTimesTryContinued"
 print(name)
-hvac(mode, name, limit)
-
-
-limit = 20000
-# mode = 0
-# name = "NormalOldVeryLong"
-# print(name)
-# hvac(mode, name, limit)
-mode = 1
-name = "NormalNewVeryLong"
-print(name)
-hvac(mode, name, limit)
-
-
-# limit = 250
-# mode = 1
-# name = "NonLearningModelFromGoodExample"
-# print(name)
-# hvac(mode, name, limit, True, "assets/Models/BestModels/LearningModelFromExampleQuick_87.h5", False)
+hvac(mode, name, limit, True, "assets/Models/LearningModelFromGoodExampleWithFutureTimes_592.h5", True, .01)

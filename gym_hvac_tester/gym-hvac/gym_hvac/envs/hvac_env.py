@@ -147,12 +147,13 @@ class HVACEnv(gym.Env):
         Reward is 1 for every step taken, including the termination step
 
     Starting State:
-        All observations are assigned a uniform random value in [20 .. 23]
+        All observations are assigned a uniform random value in [10..20]
 
     Episode Termination:
         Temperature Basement is less than 10 or more than 30
         Temperature Main Floor is less than 10 or more than 30
         Temperature Attic is less than 10 or more than 30
+        Episode length is greater than 200
         Solved Requirements
         Considered solved when the average reward is greater than or equal to 195.0 over 100 consecutive trials.
     """
@@ -352,7 +353,10 @@ class HVACEnv(gym.Env):
             3	Temperature Basement        0           40
             4	Temperature Main Floor      0           40
             5	Temperature Attic           0           40
-            6   Temp in 2 hours              -273        Inf
+            6   Temp in 1 hour              -273        Inf
+            7   Temp in 2 hours             -273        Inf
+            8   Temp in 3 hours             -273        Inf
+            
         '''
         low = np.array([
             -273,
@@ -361,6 +365,8 @@ class HVACEnv(gym.Env):
             0,
             0,
             0,
+            -273,
+            -273,
             -273,
 
         ])
@@ -371,6 +377,8 @@ class HVACEnv(gym.Env):
             40,
             40,
             40,
+            np.finfo(np.float32).max,
+            np.finfo(np.float32).max,
             np.finfo(np.float32).max,
         ])
 
@@ -419,6 +427,7 @@ class HVACEnv(gym.Env):
         # HVAC rewards
         if(0<=action<=2):
             return -1 if action != 1 else 0
+
         # Fan costs
         if(3<=action<=4):
             return -.25
@@ -431,7 +440,7 @@ class HVACEnv(gym.Env):
     def step(self, action):
         assert self.action_space.contains(action), "%r (%s) invalid" % (action, type(action))
         state = self.state
-        air_temp, ground_temp, hvac_temp, basement_temp, main_temp, attic_temp, twohourt = state
+        air_temp, ground_temp, hvac_temp, basement_temp, main_temp, attic_temp, onehourt, twohourt, threehourt= state
 
         # Basement
         basement_temp_change_equation = self.basement.get_temp_change_eq(self.fans)
@@ -454,7 +463,9 @@ class HVACEnv(gym.Env):
                       new_basement_temp,
                       new_main_temp,
                       new_attic_temp,
+                      self.get_air_temp_future(1),
                       self.get_air_temp_future(2),
+                      self.get_air_temp_future(3)
                       )
 
 
@@ -505,10 +516,12 @@ class HVACEnv(gym.Env):
                                                self.get_ground_temperature(0),
                                                0]),
                                      # Note if you must change the size of the observations, change the size in below array to match total - 3
-                                     self.np_random.uniform(low=20, high=23, size=(3,)),
+                                     self.np_random.uniform(low=10, high=30, size=(3,)),
 
                                      np.array([
+                                         self.get_air_temp_future(1),
                                          self.get_air_temp_future(2),
+                                         self.get_air_temp_future(3)
                                      ])
                                      ), axis=0)
 
